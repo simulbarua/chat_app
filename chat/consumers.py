@@ -75,6 +75,9 @@ class ChatConsumer(AsyncConsumer):
     async def websocket_disconnect(self, event):
         # when the socket disconnect
         print("disconnected", event)
+        await self.channel_layer.group_discard(
+            self.chat_room, self.channel_name
+        )
 
     @database_sync_to_async
     def get_thread(self, user, other_username):
@@ -84,3 +87,27 @@ class ChatConsumer(AsyncConsumer):
     def create_chat_message(self, me, message):
         thread_obj = self.thread_obj
         return ChatMessage.objects.create(thread=thread_obj, user=me, message=message)
+
+
+class NotificationConsumer(AsyncConsumer):
+    async def websocket_connect(self, event):
+        user = self.scope['user']
+        self.group_name = f"ntf_{user.id}"
+        await self.channel_layer.group_add(
+            self.group_name,
+            self.channel_name
+        )
+        await self.send({
+            "type": "websocket.accept"
+        })
+
+    async def websocket_disconnect(self, event):
+        await self.channel_layer.group_discard(
+            self.group_name,
+            self.channel_name
+        )
+
+    async def notification_send(self, event):
+        await self.send({
+            "type": "websocket.send",
+            "text": event['text']})

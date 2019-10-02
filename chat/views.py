@@ -8,13 +8,25 @@ from django.views.generic import DetailView, ListView
 
 from .forms import ComposeForm
 from .models import Thread, ChatMessage
+from django.contrib.auth.models import User
+from django.db.models import Q
 
 
-class InboxView(LoginRequiredMixin, ListView):
-    template_name = 'chat/inbox.html'
+# class InboxView(LoginRequiredMixin, ListView):
+#     template_name = 'chat/inbox.html'
 
-    def get_queryset(self):
-        return Thread.objects.by_user(self.request.user)
+#     def get_queryset(self):
+#         return Thread.objects.by_user(self.request.user)
+
+def InboxView(request):
+    users = User.objects.all().exclude(id=request.user.id)
+    threads = Thread.objects.filter(
+        Q(first=request.user) | Q(second=request.user))
+    context = {
+        "users": users,
+        "threads": threads
+    }
+    return render(request, "chat/inbox.html", context)
 
 
 class ThreadView(LoginRequiredMixin, FormMixin, DetailView):

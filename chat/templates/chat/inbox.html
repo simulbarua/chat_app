@@ -1,6 +1,87 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
 
-{% block content %}
+<h1>Users</h1>
+<hr />
+<ul>
+  {% for user in users %}
+  <li>
+    <a href="{% url 'chat:chat_room' user.username %}">{{ user.username }}</a>
+    <hr />
+  </li>
 
+  {% endfor %}
+</ul>
+<hr />
+<h1>Chats</h1>
+<hr />
+<div id="ntf">
+
+</div>
+<ul>
+  {% for thread in threads %}
+  <li>
+    <a
+    {% if thread.first == request.user %}
+        href="{% url 'chat:chat_room' thread.second.username %}"
+    {% else %}
+        href="{% url 'chat:chat_room' thread.first.username %}"
+    {% endif %}
+    >
+      {% if thread.first == request.user %}
+      {{ thread.second.username }}
+      {% else%}
+      {{ thread.first.username }}
+      {% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
 
 {% endblock %}
+
+{% block script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.js"></script>
+<script>
+  // websocket scripts
+  ntfHolder = $('#ntf');
+  var wsStart = "ws://";
+  var chatHolder = $("#chat-items");
+  if (window.location.protocol == "https:") {
+    wsStart = "wss://";
+  }
+  var endpoint = wsStart + window.location.host + "/notification/";
+  var socket = new ReconnectingWebSocket(endpoint);
+
+//   socket.onopen = function(e) {
+//     console.log("open", e);
+//     formData.submit(function(event) {
+//       event.preventDefault();
+//       var msgText = msgInput.val();
+//       finalData = {
+//         message: msgText
+//       };
+//       socket.send(JSON.stringify(finalData));
+//       formData[0].reset();
+//     });
+//   };
+  socket.onmessage = function(e) {
+    console.log("message", e);
+    var ntfMsg = JSON.parse(e.data);
+    ntfHolder.append(
+        "<h5>" + ntfMsg.message + " " + ntfMsg.username + "</h5>"
+    );
+
+    // chatHolder.append(
+    //   "<li>" + chatDataMsg.message + " via " + chatDataMsg.username + "</li>"
+    // );
+  };
+  
+//   socket.onerror = function(e) {
+//     console.log("error", e);
+//   };
+//   socket.onclose = function(e) {
+//     console.log("close", e);
+//   };
+</script>
+{% endblock %}
+
